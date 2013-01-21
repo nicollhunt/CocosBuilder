@@ -112,6 +112,16 @@
 			<key>name</key>
 			<string>string</string>
 		</dict>
+		<dict>
+			<key>displayName</key>
+			<string>Alignment</string>
+			<key>type</key>
+			<string>IntegerLabeled</string>
+			<key>name</key>
+			<string>alignment</string>
+			<key>extra</key>
+			<string>Left|0|Center|1|Right|2</string>
+		</dict>
 	</array>
 </dict>
 </plist>
