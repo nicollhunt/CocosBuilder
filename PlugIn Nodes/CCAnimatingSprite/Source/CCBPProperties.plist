@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>inheritsFrom</key>
+	<string>CCSprite</string>
+	<key>canHaveChildren</key>
+	<string>YES</string>
+	<key>className</key>
+	<string>CCAnimatingSprite</string>
+	<key>editorClassName</key>
+	<string>CCAnimatingSprite</string>
+	<key>properties</key>
+	<array>
+		<dict>
+			<key>displayName</key>
+			<string>CCAnimatingSprite</string>
+			<key>type</key>
+			<string>Separator</string>
+		</dict>
+		<dict>
+			<key>displayName</key>
+			<string>Frame Delay</string>
+			<key>type</key>
+			<string>Float</string>
+			<key>name</key>
+			<string>delay</string>
+		</dict>
+		<dict>
+			<key>displayName</key>
+			<string>Ignore Pause</string>
+			<key>type</key>
+			<string>Check</string>
+			<key>name</key>
+			<string>ignorePause</string>
+		</dict>
+	</array>
+</dict>
+</plist>
