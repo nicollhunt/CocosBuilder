@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>inheritsFrom</key>
-	<string>CCSprite</string>
+	<string>CCAnimatingSprite</string>
 	<key>canHaveChildren</key>
 	<string>YES</string>
 	<key>className</key>

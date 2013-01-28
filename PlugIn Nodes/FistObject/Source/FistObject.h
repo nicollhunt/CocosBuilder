@@ -23,8 +23,9 @@
  */
 
 #import "cocos2d.h"
+#import "CCAnimatingSprite.h"
 
-@interface FistObject : CCSprite
+@interface FistObject : CCAnimatingSprite
 {
     
 }

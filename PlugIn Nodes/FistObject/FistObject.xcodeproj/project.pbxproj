@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8057905516B1876C0042F4F8 /* CCAnimatingSprite.m in Sources */ = {isa = PBXBuildFile; fileRef = 8057905416B1876C0042F4F8 /* CCAnimatingSprite.m */; };
 		E3DEFB1414FFD66C00B98586 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E3DEFB1314FFD66C00B98586 /* Cocoa.framework */; };
 		E3DEFB1E14FFD66C00B98586 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = E3DEFB1C14FFD66C00B98586 /* InfoPlist.strings */; };
 		E3DEFC5614FFD9E900B98586 /* FistObject.m in Sources */ = {isa = PBXBuildFile; fileRef = E3DEFC5514FFD9E900B98586 /* FistObject.m */; };
@@ -14,6 +15,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8057905316B1876C0042F4F8 /* CCAnimatingSprite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CCAnimatingSprite.h; path = ../../CCAnimatingSprite/Source/CCAnimatingSprite.h; sourceTree = "<group>"; };
+		8057905416B1876C0042F4F8 /* CCAnimatingSprite.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CCAnimatingSprite.m; path = ../../CCAnimatingSprite/Source/CCAnimatingSprite.m; sourceTree = "<group>"; };
 		E3DEFB1014FFD66C00B98586 /* FistObject.ccbPlugNode */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FistObject.ccbPlugNode; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3DEFB1314FFD66C00B98586 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		E3DEFB1614FFD66C00B98586 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -204,6 +207,8 @@
 		E3DEFB2614FFD74500B98586 /* libs */ = {
 			isa = PBXGroup;
 			children = (
+				8057905316B1876C0042F4F8 /* CCAnimatingSprite.h */,
+				8057905416B1876C0042F4F8 /* CCAnimatingSprite.m */,
 				E3DEFB2714FFD74500B98586 /* cocos2d */,
 				E3DEFBD414FFD74500B98586 /* kazmath */,
 			);
@@ -465,6 +470,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E3DEFC5614FFD9E900B98586 /* FistObject.m in Sources */,
+				8057905516B1876C0042F4F8 /* CCAnimatingSprite.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
