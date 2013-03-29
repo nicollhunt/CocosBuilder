@@ -555,7 +555,7 @@ static BOOL hideAllToNextSeparator;
     inspectorValue.rootNode = (self.selectedNode == [CocosScene cocosScene].rootNode);
     
     // Save a reference in case it needs to be updated
-    if (prop)
+    if (prop && inspectorValue)
     {
         [currentInspectorValues setObject:inspectorValue forKey:prop];
     }

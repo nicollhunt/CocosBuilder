@@ -3,44 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>inheritsFrom</key>
-	<string>CCSprite</string>
+	<string>CCMenu</string>
 	<key>canHaveChildren</key>
 	<string>YES</string>
 	<key>className</key>
-	<string>CCAnimatingSprite</string>
+	<string>CCMenuGamepad</string>
 	<key>editorClassName</key>
-	<string>CCAnimatingSprite</string>
+	<string>CCMenuGamepad</string>
 	<key>properties</key>
 	<array>
 		<dict>
 			<key>displayName</key>
-			<string>CCAnimatingSprite</string>
+			<string>CCMenuGamepad</string>
 			<key>type</key>
 			<string>Separator</string>
 		</dict>
 		<dict>
 			<key>displayName</key>
-			<string>Frame Delay</string>
-			<key>type</key>
-			<string>Float</string>
-			<key>name</key>
-			<string>delay</string>
-		</dict>
-		<dict>
-			<key>displayName</key>
-			<string>Ignore Pause</string>
+			<string>Gamepad Locked</string>
 			<key>type</key>
 			<string>Check</string>
 			<key>name</key>
-			<string>ignorePause</string>
-		</dict>
-		<dict>
-			<key>displayName</key>
-			<string>Wildcard</string>
-			<key>type</key>
-			<string>String</string>
-			<key>name</key>
-			<string>wildcard</string>
+			<string>gamepadLocked</string>
 		</dict>
 	</array>
 </dict>
