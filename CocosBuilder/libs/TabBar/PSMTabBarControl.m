@@ -1624,9 +1624,13 @@
 
 - (void) setIsEdited:(BOOL) isEdited ForTabViewItem:(NSTabViewItem*)tabViewItem
 {
-    NSInteger tabIndex = [tabView indexOfTabViewItem:tabViewItem];
-    PSMTabBarCell* thisCell = [_cells objectAtIndex:tabIndex];
-    [thisCell setIsEdited:isEdited];
+    if (tabViewItem != nil)
+    {
+        NSInteger tabIndex = [tabView indexOfTabViewItem:tabViewItem];
+        PSMTabBarCell* thisCell = [_cells objectAtIndex:tabIndex];
+        [thisCell setIsEdited:isEdited];
+    }
+    
     [self setNeedsDisplay:YES];
 }
 
