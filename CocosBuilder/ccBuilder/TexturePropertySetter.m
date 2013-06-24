@@ -87,8 +87,13 @@
         spriteFrame = [CCSpriteFrame frameWithTexture:texture rect:bounds] ;
     }
 
-    // Actually set the sprite frame
-    [node setValue:spriteFrame forKey:prop];
+    @try
+    {
+        // Actually set the sprite frame
+        [node setValue:spriteFrame forKey:prop];
+    }
+    @catch (NSException *exception) {
+    }
 }
 
 + (void) setTextureForNode:(CCNode*)node andProperty:(NSString*) prop withFile:(NSString*) spriteFile

@@ -19,6 +19,8 @@
 			<string>Separator</string>
 		</dict>
 		<dict>
+			<key>animatable</key>
+			<true/>
 			<key>displayName</key>
 			<string>Batch Texture</string>
 			<key>type</key>
