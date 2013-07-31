@@ -32,5 +32,6 @@
 
 @property (nonatomic,retain) NSString *triggerName;
 @property (nonatomic,assign) bool repeatTrigger;
+@property (nonatomic,assign) bool visibleTrigger;
 
 @end
