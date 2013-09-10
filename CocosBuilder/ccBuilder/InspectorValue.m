@@ -116,14 +116,42 @@
             SequencerKeyframe* keyframe = [seqNodeProp keyframeAtTime:seq.timelinePosition];
             if (keyframe)
             {
-                keyframe.value = value;
+                if (seqNodeProp.type == kCCBKeyframeTypePoint)
+                {
+                    NSValue *val = (NSValue *)value;
+                    NSPoint point = [val pointValue];
+                    keyframe.value = [NSArray arrayWithObjects:
+                                      [NSNumber numberWithFloat:point.x],
+                                      [NSNumber numberWithFloat:point.y],
+                                      nil];
+                }
+                else
+                {
+                    keyframe.value = value;
+
+                }
             }
             
             [[SequencerHandler sharedHandler] redrawTimeline];
         }
         else
         {
-            [nodeInfo.baseValues setObject:value forKey:propertyName];
+            int type = [SequencerKeyframe keyframeTypeFromPropertyType:[plugIn propertyTypeForProperty:propertyName]];
+            if (type == kCCBKeyframeTypePoint)
+            {
+                NSValue *val = (NSValue *)value;
+                NSPoint point = [val pointValue];
+                NSValue *array = [NSArray arrayWithObjects:
+                                  [NSNumber numberWithFloat:point.x],
+                                  [NSNumber numberWithFloat:point.y],
+                                  nil];
+                
+                [nodeInfo.baseValues setObject:array forKey:propertyName];
+            }
+            else
+            {
+                [nodeInfo.baseValues setObject:value forKey:propertyName];
+            }
         }
     }
 }

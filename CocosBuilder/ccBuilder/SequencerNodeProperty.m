@@ -154,7 +154,7 @@
     
     // Remove duplicates
     int i = 0;
-    while (i < (keyframes.count - 1))
+    while (keyframes.count > 0 && i < (keyframes.count - 1))
     {
         SequencerKeyframe* kf0 = [keyframes objectAtIndex:i];
         SequencerKeyframe* kf1 = [keyframes objectAtIndex:i+1];
@@ -301,7 +301,8 @@
         return [NSNumber numberWithFloat:fStart+span*interpolVal];
     }
     else if (type == kCCBKeyframeTypePosition
-             || type == kCCBKeyframeTypeScaleLock)
+             || type == kCCBKeyframeTypeScaleLock
+             || type == kCCBKeyframeTypePoint)
     {
         CGPoint pStart = CGPointZero;
         CGPoint pEnd = CGPointZero;

@@ -296,6 +296,16 @@
         
         return [NSArray arrayWithObjects:sprite, sheet, nil];
     }
+    else if (type == kCCBKeyframeTypePoint)
+    {       
+        NSValue* value = [self valueForKey:name];
+        NSPoint point = [value pointValue];
+        
+        return [NSArray arrayWithObjects:
+                [NSNumber numberWithFloat:point.x],
+                [NSNumber numberWithFloat:point.y],
+                nil];
+    }
     
     return NULL;
 }
@@ -349,6 +359,15 @@
     else if (type == kCCBKeyframeTypeByte)
     {
         [self setValue:value forKey:propName];
+    }
+    else if (type == kCCBKeyframeTypePoint)
+    {
+        NSPoint pos;
+        pos.x = [[value objectAtIndex:0] floatValue];
+        pos.y = [[value objectAtIndex:1] floatValue];
+        
+        // Set the position value
+        [self setValue:[NSValue valueWithPoint:pos] forKey:propName];
     }
 }
 

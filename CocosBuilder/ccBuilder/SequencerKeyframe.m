@@ -110,6 +110,10 @@
     {
         return kCCBKeyframeTypeSpriteFrame;
     }
+    else if ([type isEqualToString:@"Point"])
+    {
+        return kCCBKeyframeTypePoint;
+    }
     else
     {
         return kCCBKeyframeTypeUndefined;
@@ -163,6 +167,11 @@
         int b1 = [[keyframe.value objectAtIndex:2] intValue];
         
         return (r0 == r1 && g0 == g1 && b0 == b1);
+    }
+    else if (type == kCCBKeyframeTypePoint)
+    {
+        return ([[value objectAtIndex:0] floatValue] == [[keyframe.value objectAtIndex:0] floatValue] &&
+                [[value objectAtIndex:1] floatValue] == [[keyframe.value objectAtIndex:1] floatValue]);
     }
     return NO;
 }

@@ -77,6 +77,8 @@
 			<string>Content size</string>
 		</dict>
 		<dict>
+			<key>animatable</key>
+			<true/>
 			<key>type</key>
 			<string>Point</string>
 			<key>name</key>
