@@ -15,12 +15,18 @@
 @synthesize deviceType;
 @synthesize hasRetinaDisplay;
 @synthesize populated;
+@synthesize preferredResourceType;
+@synthesize uuid;
+@synthesize fileList;
 
 - (void) dealloc
 {
     [identifier release];
     [deviceName release];
     [deviceType release];
+    [preferredResourceType release];
+    [uuid release];
+    [fileList release];
     
     [super dealloc];
 }

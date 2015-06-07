@@ -64,6 +64,7 @@
     [propTypes addObject:@"String"];
     [propTypes addObject:@"BlockCCControl"];
     [propTypes addObject:@"FloatScale"];
+    [propTypes addObject:@"FloatXY"];
 }
 
 - (id) init
@@ -312,8 +313,9 @@
         [self writeInt:sizeType withSign:NO];
     }
     else if ([type isEqualToString:@"Point"]
-            || [type isEqualToString:@"PointLock"]
-            || [type isEqualToString:@"FloatVar"])
+             || [type isEqualToString:@"PointLock"]
+             || [type isEqualToString:@"FloatVar"]
+             || [type isEqualToString:@"FloatXY"])
     {
         float a = [[prop objectAtIndex:0] floatValue];
         float b = [[prop objectAtIndex:1] floatValue];
@@ -478,14 +480,15 @@
                 {
                     // Write a keyframe
                     id value = [keyframe objectForKey:@"value"];
-                    NSString* a = [value objectAtIndex:0];
-                    NSString* b = [value objectAtIndex:1];
+                    NSString* a = [value objectAtIndex:1];
+                    NSString* b = [value objectAtIndex:0];
                     
                     if ([b isEqualToString:@"Use regular file"]) b = @"";
+                    if ([a isEqualToString:@"Use regular file"]) a = @"";
                     
-                    if ([self isSprite:a inGeneratedSpriteSheet:b])
+                    if ([self isSprite:b inGeneratedSpriteSheet:a])
                     {
-                        b = [[a stringByDeletingLastPathComponent] stringByAppendingPathExtension:@"plist"];
+                        a = [[b stringByDeletingLastPathComponent] stringByAppendingPathExtension:@"plist"];
                     }
                     
                     [self addToStringCache:a isPath:YES];
@@ -614,6 +617,53 @@
     for (NSDictionary* seq in seqs)
     {
         [self addToStringCache:[seq objectForKey:@"name"] isPath:NO];
+        
+        // Write callback channel
+        NSArray* callbackKeyframes = [[seq objectForKey:@"callbackChannel"] objectForKey:@"keyframes"];
+        for (NSDictionary* kf in callbackKeyframes)
+        {
+            NSArray* value = [kf objectForKey:@"value"];
+            NSString* callbackName = [value objectAtIndex:0];
+            [self addToStringCache:callbackName isPath:NO];
+        }
+        
+        NSArray* soundKeyframes = [[seq objectForKey:@"soundChannel"] objectForKey:@"keyframes"];
+        for (NSDictionary* kf in soundKeyframes)
+        {
+            NSArray* value = [kf objectForKey:@"value"];
+            NSString* soundName = [value objectAtIndex:0];
+            [self addToStringCache:soundName isPath:YES];
+        }
+    }
+}
+
+- (void) writeChannelKeyframe:(NSDictionary*) kf
+{
+    NSArray* value = [kf objectForKey:@"value"];
+    int type = [[kf objectForKey:@"type"] intValue];
+    float time = [[kf objectForKey:@"time"] floatValue];
+    
+    [self writeFloat:time];
+    
+    if (type == kCCBKeyframeTypeCallbacks)
+    {
+        NSString* selector = [value objectAtIndex:0];
+        int target = [[value objectAtIndex:1] intValue];
+        
+        [self writeCachedString:selector isPath:NO];
+        [self writeInt:target withSign:NO];
+    }
+    else if (type == kCCBKeyframeTypeSoundEffects)
+    {
+        NSString* sound = [value objectAtIndex:0];
+        float pitch = [[value objectAtIndex:1] floatValue];
+        float pan = [[value objectAtIndex:2] floatValue];
+        float gain = [[value objectAtIndex:3] floatValue];
+        
+        [self writeCachedString:sound isPath:YES];
+        [self writeFloat:pitch];
+        [self writeFloat:pan];
+        [self writeFloat:gain];
     }
 }
 
@@ -638,6 +688,24 @@
         if ([[seq objectForKey:@"autoPlay"] boolValue])
         {
             autoPlaySeqId = [[seq objectForKey:@"sequenceId"] intValue];
+        }
+        
+        // Write callback channel
+        NSArray* callbackKeyframes = [[seq objectForKey:@"callbackChannel"] objectForKey:@"keyframes"];
+        
+        [self writeInt: (int)callbackKeyframes.count withSign:NO];
+        for (NSDictionary* keyframe in callbackKeyframes)
+        {
+            [self writeChannelKeyframe:keyframe];
+        }
+        
+        // Write and sound channel
+        NSArray* soundKeyframes = [[seq objectForKey:@"soundChannel"] objectForKey:@"keyframes"];
+        
+        [self writeInt: (int)soundKeyframes.count withSign:NO];
+        for (NSDictionary* keyframe in soundKeyframes)
+        {
+            [self writeChannelKeyframe:keyframe];
         }
     }
     
@@ -732,7 +800,8 @@
     }
     else if ([type isEqualToString:@"ScaleLock"]
              || [type isEqualToString:@"Position"]
-             || [type isEqualToString:@"Point"])
+             || [type isEqualToString:@"Point"]
+             || [type isEqualToString:@"FloatXY"])
     {
         float a = [[value objectAtIndex:0] floatValue];
         float b = [[value objectAtIndex:1] floatValue];
@@ -761,6 +830,8 @@
 {
     // Write class
     NSString* class = [node objectForKey:@"customClass"];
+    if (jsControlled) class = @"";
+    
     BOOL hasCustomClass = YES;
     if (!class || [class isEqualToString:@""])
     {
@@ -822,6 +893,7 @@
             else if (kfType == kCCBKeyframeTypeSpriteFrame) propType = @"SpriteFrame";
             else if (kfType == kCCBKeyframeTypePosition) propType = @"Position";
             else if (kfType == kCCBKeyframeTypePoint) propType = @"Point";
+            else if (kfType == kCCBKeyframeTypeFloatXY) propType = @"FloatXY";
             
             NSAssert(propType, @"Unknown animated property type");
             

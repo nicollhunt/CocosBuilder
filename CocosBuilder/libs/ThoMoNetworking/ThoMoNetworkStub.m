@@ -148,7 +148,10 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 
 -(void)send:(id<NSCoding>)theData toConnection:(NSString *)theConnectionIdString;
 {
-	NSData *sendData = [NSKeyedArchiver archivedDataWithRootObject:theData];
+//   NSData *sendData = [NSKeyedArchiver archivedDataWithRootObject:theData];
+    NSError *error;
+    NSData *sendData = [NSPropertyListSerialization dataWithPropertyList:theData format:NSPropertyListBinaryFormat_v1_0 options:NULL error:&error];
+    
 	[self sendByteData:sendData toConnection:theConnectionIdString];
 }
 
@@ -243,9 +246,12 @@ NSString *const kThoMoNetworkPrefScopeSpecifierKey				= @"kThoMoNetworkPrefScope
 	NSString *connectionKey = [self keyForConnection:theConnection];
 	
 	// unarchive the data
-	id receivedData = [NSKeyedUnarchiver unarchiveObjectWithData:theData];
+	//id receivedData = [NSKeyedUnarchiver unarchiveObjectWithData:theData];
 	
-	// package the parameters into an info dict and relay them to the main thread
+    NSError *error;
+    NSDictionary *receivedData = [NSPropertyListSerialization propertyListWithData:theData options:NULL format:NULL error:&error];
+    
+    // package the parameters into an info dict and relay them to the main thread
 	NSDictionary *infoDict = [NSDictionary dictionaryWithObjectsAndKeys:	
 							  connectionKey,	kThoMoNetworkInfoKeyRemoteConnectionIdString,
 							  self,				kThoMoNetworkInfoKeyLocalNetworkStub,

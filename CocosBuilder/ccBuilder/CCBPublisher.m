@@ -37,11 +37,15 @@
 #import "CCBFileUtil.h"
 #import "Tupac.h"
 #import "CCBPublisherTemplate.h"
+#import "CCBDirectoryComparer.h"
+#import "ResourceManager.h"
+#import "ResourceManagerUtil.h"
 
 @implementation CCBPublisher
 
 @synthesize publishFormat;
 @synthesize runAfterPublishing;
+@synthesize browser;
 
 - (id) initWithProjectSettings:(ProjectSettings*)settings warnings:(CCBWarnings*)w
 {
@@ -53,7 +57,7 @@
     warnings = [w retain];
     
     // Setup extensions to copy
-    copyExtensions = [[NSArray alloc] initWithObjects:@"jpg",@"png", @"pvr", @"ccz", @"plist", @"fnt", @"ttf",@"js",@"wav",@"mp3",@"m4a",@"caf", nil];
+    copyExtensions = [[NSArray alloc] initWithObjects:@"jpg",@"png", @"pvr", @"ccz", @"plist", @"fnt", @"ttf",@"js", @"json", @"wav",@"mp3",@"m4a",@"caf", nil];
     
     // Set format to use for exports
     self.publishFormat = projectSettings.exporter;
@@ -61,6 +65,54 @@
     return self;
 }
 
+- (NSDate*) latestModifiedDateForDirectory:(NSString*) dir
+{
+    NSDate* latestDate = [CCBFileUtil modificationDateForFile:dir];
+    
+    NSArray* files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:NULL];
+    for (NSString* file in files)
+    {
+        NSString* absFile = [dir stringByAppendingPathComponent:file];
+        
+        BOOL isDir = NO;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:absFile isDirectory:&isDir])
+        {
+            NSDate* fileDate = NULL;
+            
+            if (isDir)
+            {
+                fileDate = [self latestModifiedDateForDirectory:absFile];
+            }
+            else
+            {
+                fileDate = [CCBFileUtil modificationDateForFile:absFile];
+            }
+            
+            if ([fileDate compare:latestDate] == NSOrderedDescending)
+            {
+                latestDate = fileDate;
+            }
+        }
+    }
+    
+    return latestDate;
+}
+
+- (void) addRenamingRuleFrom:(NSString*)src to: (NSString*)dst
+{
+    if (projectSettings.flattenPaths)
+    {
+        src = [src lastPathComponent];
+        dst = [dst lastPathComponent];
+    }
+    
+    if ([src isEqualToString:dst]) return;
+    
+    // Add the file to the dictionary
+    [renamedFiles setObject:dst forKey:src];
+}
+
+/*
 - (BOOL) srcFile:(NSString*)srcFile isNewerThanDstFile:(NSString*)dstFile
 {
     NSDictionary* srcAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:srcFile error:NULL];
@@ -73,7 +125,7 @@
     if ([srcDate compare:dstDate] == NSOrderedDescending) return YES;
     
     return NO;
-}
+}*/
 
 - (BOOL) publishCCBFile:(NSString*)srcFile to:(NSString*)dstFile
 {
@@ -113,21 +165,43 @@
     return YES;
 }
 
-- (BOOL) copyFileIfChanged:(NSString*)srcFile to:(NSString*)dstFile forResolution:(NSString*)resolution isSpriteSheet:(BOOL)isSpriteSheet
+- (BOOL) copyFileIfChanged:(NSString*)srcFile to:(NSString*)dstFile forResolution:(NSString*)resolution isSpriteSheet:(BOOL)isSpriteSheet outDir: (NSString*)outDir srcDate: (NSDate*) srcDate
 {
     CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
     
     // Add to list of copied files
     NSString* localFileName =[dstFile relativePathFromBaseDirPath:outputDir];
     
-    if (!isSpriteSheet)
+    if (isSpriteSheet)
     {
+        // Skip sprite sheets that are already published
+        NSString* spriteSheetDir = [outDir stringByDeletingLastPathComponent];
+        NSString* spriteSheetName = [outDir lastPathComponent];
+        
+        NSString *subPath = [[ResourceManagerUtil relativePathFromAbsolutePath:srcFile] stringByDeletingLastPathComponent];
+        
+        ProjectSettingsGeneratedSpriteSheet* ssSettings = [projectSettings smartSpriteSheetForSubPath:subPath];
+
+        NSString* spriteSheetFile = NULL;
+        if (publishToSingleResolution) spriteSheetFile = outDir;
+        else spriteSheetFile = [[spriteSheetDir stringByAppendingPathComponent:[NSString stringWithFormat:@"resources-%@", resolution]] stringByAppendingPathComponent:spriteSheetName];
+        
+        NSDate* dstDate = [CCBFileUtil modificationDateForFile:[spriteSheetFile stringByAppendingPathExtension:@"plist"]];
+        if (dstDate && [dstDate isEqualToDate:srcDate] && !ssSettings.isDirty)
+        {
+            return YES;
+        }
+    }
+    else
+    {
+        // Add the file name to published resource list
         [publishedResources addObject:localFileName];
     }
     
     // Update progress
-    [ad modalStatusWindowUpdateStatusText:[NSString stringWithFormat:@"Publishing %@...", localFileName]];
+    [ad modalStatusWindowUpdateStatusText:[NSString stringWithFormat:@"Publishing %@...", [dstFile lastPathComponent]]];
     
+    // Find out which file to copy for the current resolution
     NSFileManager* fm = [NSFileManager defaultManager];
     
     NSString* srcAutoFile = NULL;
@@ -160,11 +234,16 @@
         return NO;
     }
     
-    // Check that src file exist
+    // Copy auto-sized images
     if (![fm fileExistsAtPath:srcFile])
     {
-        if ([fm fileExistsAtPath:srcAutoFile])
+        if ([fm fileExistsAtPath:srcAutoFile] && resolution != NULL)
         {
+            // Check if resized image already exists
+            NSDate* srcDate = [CCBFileUtil modificationDateForFile:srcAutoFile];
+            NSDate* dstDate = [CCBFileUtil modificationDateForFile:dstFile];
+            if ([srcDate isEqualToDate:dstDate]) return YES;
+            
             // Copy auto file and resize
             [[ResourceManager sharedManager] createCachedImageFromAuto:srcAutoFile saveAs:dstFile forResolution:resolution];
             return YES;
@@ -176,7 +255,7 @@
     }
     
     // Check for equal file
-    if (!publishToSingleResolution && [fm fileExistsAtPath:dstFile] && [[CCBFileUtil modificationDateForFile:srcFile] isEqualToDate:[CCBFileUtil modificationDateForFile:dstFile]]) return YES;
+    if (/*!publishToSingleResolution && */[fm fileExistsAtPath:dstFile] && [[CCBFileUtil modificationDateForFile:srcFile] isEqualToDate:[CCBFileUtil modificationDateForFile:dstFile]]) return YES;
     
     // Remove old file
     if ([fm fileExistsAtPath:dstFile])
@@ -184,8 +263,62 @@
         [fm removeItemAtPath:dstFile error:NULL];
     }
     
-    // Just copy the file and update the modification date
-    [fm copyItemAtPath:srcFile toPath:dstFile error:NULL];
+    // Check if file should be converted
+    NSString* srcExt = [[srcFile pathExtension] lowercaseString];
+    NSString* dstExt = [[dstFile pathExtension] lowercaseString];
+    if ([srcExt isEqualToString:dstExt])
+    {
+        // Just copy the file and update the modification date
+        [fm copyItemAtPath:srcFile toPath:dstFile error:NULL];
+    }
+    else if ([srcExt isEqualToString:@"wav"])
+    {
+        // TODO: Also convert to m4a/mp3 and possibly other formats, also make custom settings
+        if ([dstExt isEqualToString:@"caf"])
+        {
+            // Convert wav to caf
+            NSTask* convTask = [[NSTask alloc] init];
+            [convTask setCurrentDirectoryPath:[srcFile stringByDeletingLastPathComponent]];
+            
+            [convTask setLaunchPath:@"/usr/bin/afconvert"];
+            NSArray* args = [NSArray arrayWithObjects:@"-f", @"caff", @"-d", @"LEI16@44100", @"-c", @"1", srcFile, dstFile, nil];
+            [convTask setArguments:args];
+            [convTask launch];
+            [convTask waitUntilExit];
+            [convTask release];
+        }
+        else if ([dstExt isEqualToString:@"mp3"])
+        {
+            // Convert to mp3
+            NSTask* convTask = [[NSTask alloc] init];
+            [convTask setCurrentDirectoryPath:[srcFile stringByDeletingLastPathComponent]];
+            [convTask setLaunchPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"lame"]];
+            NSMutableArray* args = [NSMutableArray arrayWithObjects:
+                                    @"-V2", srcFile, dstFile,
+                                    nil];
+            [convTask setArguments:args];
+            [convTask setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
+            [convTask setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+            [convTask launch];
+            [convTask waitUntilExit];
+            [convTask release];
+        }
+        else if ([dstExt isEqualToString:@"ogg"])
+        {
+            // Convert to ogg
+            NSTask* convTask = [[NSTask alloc] init];
+            [convTask setCurrentDirectoryPath:[srcFile stringByDeletingLastPathComponent]];
+            [convTask setLaunchPath:[[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"oggenc"]];
+            NSMutableArray* args = [NSMutableArray arrayWithObjects:
+                                    @"-q3", @"-o", dstFile, srcFile,
+                                    nil];
+            [convTask setArguments:args];
+            [convTask launch];
+            [convTask waitUntilExit];
+            [convTask release];
+        }
+    }
+    
     [CCBFileUtil setModificationDate:[CCBFileUtil modificationDateForFile:srcFile] forFile:dstFile];
     
     return YES;
@@ -193,8 +326,6 @@
 
 - (BOOL) publishDirectory:(NSString*) dir subPath:(NSString*) subPath
 {
-    //NSLog(@"publishDirectory: %@ subPath: %@", dir, subPath);
-    
     CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
     ResourceManager* resManager = [ResourceManager sharedManager];
     NSArray* resIndependentDirs = [resManager resIndependentDirs];
@@ -214,12 +345,12 @@
     
     // Check for generated sprite sheets
     BOOL isGeneratedSpriteSheet = NO;
-    //NSString* spriteSheetDefFile = [dir stringByAppendingPathExtension:@"ccbSpriteSheet"];
+    NSDate* srcSpriteSheetDate = NULL;
     
-    //NSLog(@"subPath: %@", subPath);
     if ([projectSettings.generatedSpriteSheets objectForKey:subPath])
     {
         isGeneratedSpriteSheet = YES;
+        srcSpriteSheetDate = [self latestModifiedDateForDirectory:dir];
         
         // Clear temporary sprite sheet directory
         [fm removeItemAtPath:[projectSettings tempSpriteSheetCacheDirectory] error:NULL];
@@ -279,6 +410,12 @@
             // Skip generated sprite sheets
             if (isGeneratedSpriteSheet) continue;
             
+            // Skip the empty folder
+            if ([[fm contentsOfDirectoryAtPath:filePath error:NULL] count] == 0)  continue;
+            
+            // Skip the fold no .ccb files when onlyPublishCCBs is true
+            if(projectSettings.onlyPublishCCBs && ![self containsCCBFile:filePath]) continue;
+            
             [self publishDirectory:filePath subPath:childPath];
         }
         else
@@ -302,13 +439,54 @@
                         dstFile = [[projectSettings tempSpriteSheetCacheDirectory] stringByAppendingPathComponent:fileName];
                     }
                     
-                    if (![self copyFileIfChanged:filePath to:dstFile forResolution:NULL isSpriteSheet:isGeneratedSpriteSheet]) return NO;
+                    // Make conversion rules for audio
+                    NSString* newFormat = NULL;
+                    
+                    if ([ext isEqualToString:@"wav"])
+                    {
+                        if (targetType == kCCBPublisherTargetTypeIPhone)
+                        {
+                            newFormat = @"caf";
+                        }
+                        else if (targetType == kCCBPublisherTargetTypeHTML5)
+                        {
+                            newFormat = @"mp3";
+                        }
+                        else if (targetType == kCCBPublisherTargetTypeAndroid)
+                        {
+                            newFormat = @"ogg";
+                        }
+                    }
+                    /*
+                    else if ([ext isEqualToString:@"mp3"])
+                    {
+                        if (targetType == kCCBPublisherTargetTypeAndroid)
+                        {
+                            newFormat = @"ogg";
+                        }
+                    }
+                     */
+                
+                    if (newFormat)
+                    {
+                        // Set new name
+                        dstFile = [[dstFile stringByDeletingPathExtension] stringByAppendingPathExtension:newFormat];
+                        
+                        // Add to conversion table
+                        NSString* localName = fileName;
+                        if (subPath) localName = [subPath stringByAppendingPathComponent:fileName];
+                        
+                        [self addRenamingRuleFrom:localName to:[[localName stringByDeletingPathExtension] stringByAppendingPathExtension:newFormat]];
+                    }
+                
+                    // Copy file (and possibly convert)
+                    if (![self copyFileIfChanged:filePath to:dstFile forResolution:NULL isSpriteSheet:isGeneratedSpriteSheet outDir:outDir srcDate: srcSpriteSheetDate]) return NO;
                     
                     if (publishForResolutions)
                     {
                         for (NSString* res in publishForResolutions)
                         {
-                            if (![self copyFileIfChanged:filePath to:dstFile forResolution:res isSpriteSheet:isGeneratedSpriteSheet]) return NO;
+                            if (![self copyFileIfChanged:filePath to:dstFile forResolution:res isSpriteSheet:isGeneratedSpriteSheet outDir:outDir srcDate: srcSpriteSheetDate]) return NO;
                         }
                     }
                 }
@@ -331,7 +509,11 @@
                     return NO;
                 }
                 
-                if (![fm fileExistsAtPath:dstFile] || [self srcFile:filePath isNewerThanDstFile:dstFile])
+                NSDate* srcDate = [CCBFileUtil modificationDateForFile:filePath];
+                NSDate* dstDate = [CCBFileUtil modificationDateForFile:dstFile];
+                
+                //if (![fm fileExistsAtPath:dstFile] || [self srcFile:filePath isNewerThanDstFile:dstFile])
+                if (![srcDate isEqualToDate:dstDate])
                 {
                     [ad modalStatusWindowUpdateStatusText:[NSString stringWithFormat:@"Publishing %@...", fileName]];
                     
@@ -341,6 +523,8 @@
                     // Copy the file
                     BOOL sucess = [self publishCCBFile:filePath to:dstFile];
                     if (!sucess) return NO;
+                    
+                    [CCBFileUtil setModificationDate:srcDate forFile:dstFile];
                 }
             }
         }
@@ -351,7 +535,9 @@
         // Sprite files should have been saved to the temp cache directory, now actually generate the sprite sheets
         NSString* spriteSheetDir = [outDir stringByDeletingLastPathComponent];
         NSString* spriteSheetName = [outDir lastPathComponent];
-        
+        ProjectSettingsGeneratedSpriteSheet* ssSettings = [projectSettings smartSpriteSheetForSubPath:subPath];
+
+        // Check if sprite sheet needs to be re-published
         for (NSString* res in publishForResolutions)
         {
             NSArray* srcDirs = [NSArray arrayWithObjects:
@@ -363,35 +549,87 @@
             if (publishToSingleResolution) spriteSheetFile = outDir;
             else spriteSheetFile = [[spriteSheetDir stringByAppendingPathComponent:[NSString stringWithFormat:@"resources-%@", res]] stringByAppendingPathComponent:spriteSheetName];
             
+            // Skip publish if sprite sheet exists and is up to date
+            NSDate* dstDate = [CCBFileUtil modificationDateForFile:[spriteSheetFile stringByAppendingPathExtension:@"plist"]];
+            if (dstDate && [dstDate isEqualToDate:srcSpriteSheetDate] && !ssSettings.isDirty)
+            {
+                continue;
+            }
+                        
             Tupac* packer = [Tupac tupac];
             packer.outputName = spriteSheetFile;
             packer.outputFormat = TupacOutputFormatCocos2D;
             
-            if (targetType == kCCBPublisherTargetTypeHTML5)
+            if (targetType == kCCBPublisherTargetTypeIPhone)
             {
-                // Only publish PNG files
-                packer.imageFormat = kTupacImageFormatPNG;
-            }
-            else
-            {
-                // Use settings
-                ProjectSettingsGeneratedSpriteSheet* ssSettings = [projectSettings smartSpriteSheetForSubPath:subPath];
-                
                 packer.imageFormat = ssSettings.textureFileFormat;
                 packer.compress = ssSettings.compress;
                 packer.dither = ssSettings.dither;
             }
-            //packer.imageFormat = kTupacImageFormatPNG;
+            else if (targetType == kCCBPublisherTargetTypeAndroid)
+            {
+                packer.imageFormat = ssSettings.textureFileFormatAndroid;
+                packer.compress = NO;
+                packer.dither = ssSettings.ditherAndroid;
+            }
+            else if (targetType == kCCBPublisherTargetTypeHTML5)
+            {
+                packer.imageFormat = ssSettings.textureFileFormatHTML5;
+                packer.compress = NO;
+                packer.dither = ssSettings.ditherHTML5;
+            }
+            
+            // Update progress
+            [ad modalStatusWindowUpdateStatusText:[NSString stringWithFormat:@"Generating sprite sheet %@...", [[subPath stringByAppendingPathExtension:@"plist"] lastPathComponent]]];
+            
+            // Pack texture
             packer.directoryPrefix = subPath;
             packer.border = YES;
             [packer createTextureAtlasFromDirectoryPaths:srcDirs];
+            
+            // Set correct modification date
+            [CCBFileUtil setModificationDate:srcSpriteSheetDate forFile:[spriteSheetFile stringByAppendingPathExtension:@"plist"]];
         }
         
         [publishedResources addObject:[subPath stringByAppendingPathExtension:@"plist"]];
         [publishedResources addObject:[subPath stringByAppendingPathExtension:@"png"]];
+        
+        if (ssSettings.isDirty) {
+            ssSettings.isDirty = NO;
+            [projectSettings store];
+        }
     }
     
     return YES;
+}
+
+- (BOOL) containsCCBFile:(NSString*) dir
+{
+    NSFileManager* fm = [NSFileManager defaultManager];
+    ResourceManager* resManager = [ResourceManager sharedManager];
+    NSArray* files = [fm contentsOfDirectoryAtPath:dir error:NULL];
+    NSArray* resIndependentDirs = [resManager resIndependentDirs];
+    
+    for (NSString* file in files) {
+        BOOL isDirectory;
+        NSString* filePath = [dir stringByAppendingPathComponent:file];
+        
+        if([fm fileExistsAtPath:filePath isDirectory:&isDirectory]){
+            if(isDirectory){
+                // Skip resource independent directories
+                if ([resIndependentDirs containsObject:file]) {
+                    continue;
+                }else if([self containsCCBFile:filePath]){
+                    return YES;
+                }
+            }else{
+                if([[file lowercaseString] hasSuffix:@"ccb"]){
+                    return YES;
+                }
+            }
+        }
+    }
+    return NO;
 }
 
 // Currently only checks top level of resource directories
@@ -407,6 +645,7 @@
     return NO;
 }
 
+/*
 - (void) addFilesWithExtension:(NSString*)ext inDirectory:(NSString*)dir toArray:(NSMutableArray*)array subPath:(NSString*)subPath
 {
     NSArray* files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:NULL];
@@ -446,7 +685,7 @@
     }
     
     return files;
-}
+}*/
 
 - (void) publishGeneratedFiles
 {
@@ -458,7 +697,7 @@
         return;
     }
     
-    if (targetType == kCCBPublisherTargetTypeJSB)
+    if (targetType == kCCBPublisherTargetTypeIPhone || targetType == kCCBPublisherTargetTypeAndroid)
     {
         // Generate main.js file
         
@@ -467,7 +706,7 @@
             && ![self fileExistInResourcePaths:@"main.js"])
         {
             // Find all jsFiles
-            NSArray* jsFiles = [self filesInResourcePathsWithExtension:@"js"];
+            NSArray* jsFiles = [CCBFileUtil filesInResourcePathsWithExtension:@"js"];
             NSString* mainFile = [outputDir stringByAppendingPathComponent:@"main.js"];
             
             // Generate file from template
@@ -493,7 +732,7 @@
         // Generate boot-html5.js file
         
         NSString* bootFile = [outputDir stringByAppendingPathComponent:@"boot-html5.js"];
-        NSArray* jsFiles = [self filesInResourcePathsWithExtension:@"js"];
+        NSArray* jsFiles = [CCBFileUtil filesInResourcePathsWithExtension:@"js"];
         
         tmpl = [CCBPublisherTemplate templateWithFile:@"boot-html5.txt"];
         [tmpl setStrings:jsFiles forMarker:@"REQUIRED_FILES" prefix:@"    '" suffix:@"',\n"];
@@ -506,6 +745,7 @@
         
         tmpl = [CCBPublisherTemplate templateWithFile:@"boot2-html5.txt"];
         [tmpl setString:projectSettings.javascriptMainCCB forMarker:@"MAIN_SCENE"];
+        [tmpl setString:[NSString stringWithFormat:@"%d", projectSettings.publishResolutionHTML5_scale] forMarker:@"RESOLUTION_SCALE"];
         
         [tmpl writeToFile:boot2File];
         
@@ -555,6 +795,18 @@
         [[NSFileManager defaultManager] copyItemAtPath: cocos2dlibFileSrc toPath:cocos2dlibFile error:NULL];
     }
     
+    // Generate file lookup
+    NSMutableDictionary* fileLookup = [NSMutableDictionary dictionary];
+    
+    NSMutableDictionary* metadata = [NSMutableDictionary dictionary];
+    [metadata setObject:[NSNumber numberWithInt:1] forKey:@"version"];
+    
+    [fileLookup setObject:metadata forKey:@"metadata"];
+    [fileLookup setObject:renamedFiles forKey:@"filenames"];
+    
+    NSString* lookupFile = [outputDir stringByAppendingPathComponent:@"fileLookup.plist"];
+    
+    [fileLookup writeToFile:lookupFile atomically:YES];
 }
 
 - (BOOL) publishAllToDirectory:(NSString*)dir
@@ -562,6 +814,7 @@
     outputDir = dir;
     
     publishedResources = [NSMutableSet set];
+    renamedFiles = [NSMutableDictionary dictionary];
     
     // Setup paths for automatically generated sprite sheets
     generatedSpriteSheetDirs = [NSMutableArray array];
@@ -576,8 +829,6 @@
         if (![self publishDirectory:dir subPath:NULL]) return NO;
     }
     
-    //NSLog(@"publishedResources: %@", publishedResources);
-    
     // Publish generated files
     [self publishGeneratedFiles];
     
@@ -585,8 +836,79 @@
     return YES;
 }
 
+- (BOOL) archiveToFile:(NSString*)file
+{
+    NSFileManager *manager = [NSFileManager defaultManager];
+    
+    // Remove the old file
+    [manager removeItemAtPath:file error:NULL];
+    
+    // Zip it up!
+    NSTask* zipTask = [[NSTask alloc] init];
+    [zipTask setCurrentDirectoryPath:outputDir];
+    
+    [zipTask setLaunchPath:@"/usr/bin/zip"];
+    NSArray* args = [NSArray arrayWithObjects:@"-r", @"-q", file, @".", @"-i", @"*", nil];
+    [zipTask setArguments:args];
+    [zipTask launch];
+    [zipTask waitUntilExit];
+    [zipTask release];
+    
+    return [manager fileExistsAtPath:file];
+}
+
+- (BOOL) archiveToFile:(NSString*)file diffFrom:(NSDictionary*) diffFiles
+{
+    if (!diffFiles) diffFiles = [NSDictionary dictionary];
+    
+    NSFileManager *manager = [NSFileManager defaultManager];
+    
+    // Remove the old file
+    [manager removeItemAtPath:file error:NULL];
+    
+    // Create diff
+    CCBDirectoryComparer* dc = [[[CCBDirectoryComparer alloc] init] autorelease];
+    [dc loadDirectory:outputDir];
+    NSArray* fileList = [dc diffWithFiles:diffFiles];
+    
+    // Zip it up!
+    NSTask* zipTask = [[NSTask alloc] init];
+    [zipTask setCurrentDirectoryPath:outputDir];
+    
+    [zipTask setLaunchPath:@"/usr/bin/zip"];
+    NSMutableArray* args = [NSMutableArray arrayWithObjects:@"-r", @"-q", file, @".", @"-i", nil];
+    
+    for (NSString* f in fileList)
+    {
+        [args addObject:f];
+    }
+    
+    [zipTask setArguments:args];
+    [zipTask launch];
+    [zipTask waitUntilExit];
+    [zipTask release];
+    
+    return [manager fileExistsAtPath:file];
+}
+
 - (BOOL) publish_
 {
+    // Remove all old publish directories if user has cleaned the cache
+    if (projectSettings.needRepublish)
+    {
+        NSFileManager *fm = [NSFileManager defaultManager];
+        NSString* publishDir;
+        
+        publishDir = [projectSettings.publishDirectory absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
+        [fm removeItemAtPath:publishDir error:NULL];
+        
+        publishDir = [projectSettings.publishDirectoryAndroid absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
+        [fm removeItemAtPath:publishDir error:NULL];
+        
+        publishDir = [projectSettings.publishDirectoryHTML5 absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
+        [fm removeItemAtPath:publishDir error:NULL];
+    }
+    
     if (!runAfterPublishing)
     {
         // Normal publishing
@@ -594,7 +916,7 @@
         // iOS
         if (projectSettings.publishEnablediPhone)
         {
-            targetType = kCCBPublisherTargetTypeJSB;
+            targetType = kCCBPublisherTargetTypeIPhone;
             
             NSMutableArray* resolutions = [NSMutableArray array];
             
@@ -620,13 +942,24 @@
             publishToSingleResolution = NO;
             
             NSString* publishDir = [projectSettings.publishDirectory absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
-            if (![self publishAllToDirectory:publishDir]) return NO;
+            
+            if (projectSettings.publishToZipFile)
+            {
+                // Publish archive
+                NSString *zipFile = [publishDir stringByAppendingPathComponent:@"ccb.zip"];
+                
+                if (![self publishAllToDirectory:projectSettings.publishCacheDirectory] || ![self archiveToFile:zipFile]) return NO;
+            } else
+            {
+                // Publish files
+                if (![self publishAllToDirectory:publishDir]) return NO;
+            }
         }
         
         // Android
         if (projectSettings.publishEnabledAndroid)
         {
-            targetType = kCCBPublisherTargetTypeJSB;
+            targetType = kCCBPublisherTargetTypeAndroid;
             
             NSMutableArray* resolutions = [NSMutableArray array];
             
@@ -655,7 +988,18 @@
             publishToSingleResolution = NO;
             
             NSString* publishDir = [projectSettings.publishDirectoryAndroid absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
-            if (![self publishAllToDirectory:publishDir]) return NO;
+            
+            if (projectSettings.publishToZipFile)
+            {
+                // Publish archive
+                NSString *zipFile = [publishDir stringByAppendingPathComponent:@"ccb.zip"];
+                
+                if (![self publishAllToDirectory:projectSettings.publishCacheDirectory] || ![self archiveToFile:zipFile]) return NO;
+            } else
+            {
+                // Publish files
+                if (![self publishAllToDirectory:publishDir]) return NO;
+            }
         }
         
         // HTML 5
@@ -670,71 +1014,102 @@
             publishToSingleResolution = YES;
             
             NSString* publishDir = [projectSettings.publishDirectoryHTML5 absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
-            if (![self publishAllToDirectory:publishDir]) return NO;
             
+            if (projectSettings.publishToZipFile)
+            {
+                // Publish archive
+                NSString *zipFile = [publishDir stringByAppendingPathComponent:@"ccb.zip"];
+                
+                if (![self publishAllToDirectory:projectSettings.publishCacheDirectory] || ![self archiveToFile:zipFile]) return NO;
+            } else
+            {
+                // Publish files
+                if (![self publishAllToDirectory:publishDir]) return NO;
+            }
         }
+        
     }
     else
     {
-        // Publish for running on device
-        targetType = kCCBPublisherTargetTypeJSB;
-        
-        PlayerDeviceInfo* deviceInfo = [PlayerConnection sharedPlayerConnection].selectedDeviceInfo;
-        if ([deviceInfo.deviceType isEqualToString:@"iPad"])
+        if (browser)
         {
-            // iPad
-            if (deviceInfo.hasRetinaDisplay)
-            {
-                // iPad retina
-                publishForResolutions = [NSArray arrayWithObjects:@"ipadhd", nil];
-            }
-            else
-            {
-                // iPad normal
-                publishForResolutions = [NSArray arrayWithObjects:@"ipad", @"hd", nil];
-            }
+            // Publish for running in browser
+            targetType = kCCBPublisherTargetTypeHTML5;
+            
+            NSMutableArray* resolutions = [NSMutableArray array];
+            [resolutions addObject: @"html5"];
+            publishForResolutions = resolutions;
+            
+            publishToSingleResolution = YES;
+            
+            NSString* publishDir = [projectSettings.publishDirectoryHTML5 absolutePathFromBaseDirPath:[projectSettings.projectPath stringByDeletingLastPathComponent]];
+            
+            if (![self publishAllToDirectory:publishDir]) return NO;
         }
         else
         {
-            // iPhone
-            if (deviceInfo.hasRetinaDisplay)
+            // Publish for running on device
+            targetType = kCCBPublisherTargetTypeIPhone;
+            
+            PlayerDeviceInfo* deviceInfo = [PlayerConnection sharedPlayerConnection].selectedDeviceInfo;
+            if ([deviceInfo.deviceType isEqualToString:@"iPad"])
             {
-                publishForResolutions = [NSArray arrayWithObjects:@"iphonehd", nil];
+                // iPad
+                if (deviceInfo.hasRetinaDisplay)
+                {
+                    // iPad retina
+                    publishForResolutions = [NSArray arrayWithObjects:@"ipadhd", nil];
+                }
+                else
+                {
+                    // iPad normal
+                    publishForResolutions = [NSArray arrayWithObjects:@"ipad", @"hd", nil];
+                }
             }
-            else
+            else if ([deviceInfo.deviceType isEqualToString:@"iPhone"])
             {
-                publishForResolutions = [NSArray arrayWithObjects:@"iphone", nil];
+                // iPhone
+                if (deviceInfo.hasRetinaDisplay)
+                {
+                    publishForResolutions = [NSArray arrayWithObjects:@"iphonehd", nil];
+                }
+                else
+                {
+                    publishForResolutions = [NSArray arrayWithObjects:@"iphone", nil];
+                }
             }
+            else if ([deviceInfo.deviceType isEqualToString:@"Android"])
+            {
+                targetType = kCCBPublisherTargetTypeAndroid;
+                
+                publishForResolutions = [NSArray arrayWithObjects:deviceInfo.preferredResourceType, nil];
+            }
+            
+            if (![self publishAllToDirectory:projectSettings.publishCacheDirectory]) return NO;
+            
+            // Zip up and push
+            CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
+            [ad modalStatusWindowUpdateStatusText:@"Zipping up project..."];
+            
+            // Archive
+            NSString *zipFile = [projectSettings.publishCacheDirectory stringByAppendingPathComponent:@"ccb.zip"];
+            [self archiveToFile:zipFile diffFrom:deviceInfo.fileList];
+            // TODO: Fix diffFrom
+            
+            // Send to player
+            [ad modalStatusWindowUpdateStatusText:@"Sending to player..."];
+            
+            PlayerConnection* conn = [PlayerConnection sharedPlayerConnection];
+            [conn sendResourceZip:zipFile];
         }
-        
-        if (![self publishAllToDirectory:projectSettings.publishCacheDirectory]) return NO;
-        
-        // Zip up and push
-        CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
-        [ad modalStatusWindowUpdateStatusText:@"Zipping up project..."];
-        
-        NSString* zipFile = [projectSettings.publishCacheDirectory stringByAppendingPathComponent:@"ccb.zip"];
-        
-        // Remove the old file
-        [[NSFileManager defaultManager] removeItemAtPath:zipFile error:NULL];
-        
-        // Zip it up!
-        NSTask* zipTask = [[NSTask alloc] init];
-        [zipTask setCurrentDirectoryPath:outputDir];
-        [zipTask setLaunchPath:@"/usr/bin/zip"];
-        NSArray* args = [NSArray arrayWithObjects:@"-r", @"-q", zipFile, @".", @"-i", @"*", nil];
-        [zipTask setArguments:args];
-        [zipTask launch];
-        [zipTask waitUntilExit];
-        [zipTask release];
-        
-        // Send to player
-        [ad modalStatusWindowUpdateStatusText:@"Sending to player..."];
-        
-        PlayerConnection* conn = [PlayerConnection sharedPlayerConnection];
-        [conn sendResourceZip:zipFile];
     }
     
+    // Once published, set needRepublish back to NO
+    if (projectSettings.needRepublish)
+    {
+        projectSettings.needRepublish = NO;
+        [projectSettings store];
+    }
     return YES;
 }
 

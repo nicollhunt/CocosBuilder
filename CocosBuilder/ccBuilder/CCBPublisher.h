@@ -29,7 +29,8 @@
 
 enum {
     kCCBPublisherTargetTypeHTML5,
-    kCCBPublisherTargetTypeJSB,
+    kCCBPublisherTargetTypeIPhone,
+    kCCBPublisherTargetTypeAndroid,
 };
 
 @interface CCBPublisher : NSObject
@@ -40,15 +41,18 @@ enum {
     NSArray* copyExtensions;
     NSString* publishFormat;
     BOOL runAfterPublishing;
+    NSString* browser;
     BOOL publishToSingleResolution;
     NSArray* publishForResolutions;
     NSMutableArray* generatedSpriteSheetDirs;
     NSMutableSet* publishedResources;
+    NSMutableDictionary* renamedFiles;
     int targetType;
 }
 
 @property (nonatomic,copy) NSString* publishFormat;
 @property (nonatomic,assign) BOOL runAfterPublishing;
+@property (nonatomic,copy) NSString* browser;
 
 - (id) initWithProjectSettings:(ProjectSettings*)settings warnings:(CCBWarnings*)w;
 - (void) publish;

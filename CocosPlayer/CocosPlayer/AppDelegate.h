@@ -24,6 +24,7 @@
 
 #import <UIKit/UIKit.h>
 #import "cocos2d.h"
+#import "ServerController.h"
 
 @class ServerController;
 @class PlayerStatusLayer;
@@ -40,7 +41,6 @@
 	CCDirectorIOS	*director_;							// weak ref
     
     ServerController* server;
-    NSString* serverStatus;
     PlayerStatusLayer* statusLayer;
     
     BOOL isJSRunning;
@@ -57,10 +57,9 @@
 @property (nonatomic, assign) NSUInteger deviceOrientations;
 @property (nonatomic, assign) BOOL hasRetinaDisplay;
 @property (nonatomic, copy) NSString* deviceType;
+@property (nonatomic, readonly) ServerController* server;
 
 + (AppController*) appController;
-
-- (void) setStatus:(NSString*)status forceStop:(BOOL)forceStop;
 
 - (void) run;
 - (void) runJSApp;

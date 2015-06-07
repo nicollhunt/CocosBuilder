@@ -26,6 +26,39 @@
 #import "ThoMoServerStub.h"
 #import "cocos2d.h"
 
+// Network status states
+typedef enum {
+    kCCBNetworkUninitialized = -1,
+	kCCBNetworkStatusWaiting,
+	kCCBNetworkStatusTooMany,
+	kCCBNetworkStatusConnected,
+	kCCBNetworkStatusShutDown,
+} CCBNetworkStatus;
+
+// Player status states
+typedef enum {
+    kCCBPlayerStatuskUninitialized = -1,
+	kCCBPlayerStatusIdle,
+	kCCBPlayerStatusPlay,
+	kCCBPlayerStatusUnzip,
+	kCCBPlayerStatusStop,
+	kCCBPlayerStatusNotConnected,
+	kCCBPlayerStatusExecuteScript,
+} CCBPlayerStatus;
+
+// Predefined messages
+extern NSString *kCCBNetworkStatusStringWaiting;
+extern NSString *kCCBNetworkStatusStringTooMany;
+extern NSString *kCCBNetworkStatusStringConnected;
+extern NSString *kCCBNetworkStatusStringShutDown;
+
+extern NSString *kCCBPlayerStatusStringNotConnected;
+extern NSString *kCCBPlayerStatusStringIdle;
+extern NSString *kCCBPlayerStatusStringUnzip;
+extern NSString *kCCBPlayerStatusStringStop;
+extern NSString *kCCBPlayerStatusStringPlay;
+extern NSString *kCCBPlayerStatusStringScript;
+
 @interface ServerController : NSObject <ThoMoServerDelegateProtocol>
 {
     ThoMoServerStub* server;
@@ -33,7 +66,19 @@
     NSMutableSet* connectedClients;
     
     NSFileHandle* pipeReadHandle;
+
+	CCBNetworkStatus networkStatus;
+	CCBPlayerStatus playerStatus;
+	BOOL playerWindowDisplayed;
 }
+
+/** Network status: who is the network connection */
+@property (nonatomic, readwrite) CCBNetworkStatus networkStatus;
+
+/** State of the player: playing, unzipping, stopping, etc.  */
+@property (nonatomic, readwrite) CCBPlayerStatus playerStatus;
+
+@property (nonatomic, readwrite) BOOL playerWindowDisplayed;
 
 @property (nonatomic,copy) NSString* serverStatus;
 
@@ -45,5 +90,7 @@
 - (void) sendDeviceName;
 - (void) sendResultString:(NSString*) str;
 - (void) sendLog:(NSString*)log;
+- (void) sendFileList;
+- (void) sendRunning;
 
 @end

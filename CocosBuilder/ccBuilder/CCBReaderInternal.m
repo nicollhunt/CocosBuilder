@@ -37,6 +37,8 @@
 #import "PositionPropertySetter.h"
 #import "CCNode+NodeInfo.h"
 
+NSDictionary* renamedProperties = NULL;
+
 @implementation CCBReaderInternal
 
 + (NSPoint) deserializePoint:(id) val
@@ -150,6 +152,13 @@
             }
         }
         [PositionPropertySetter setScaledX:x Y:y type:scaleType forNode:node prop:name];
+    }
+    else if ([type isEqualToString:@"FloatXY"])
+    {
+        float x = [[serializedValue objectAtIndex:0] floatValue];
+        float y = [[serializedValue objectAtIndex:1] floatValue];
+        [node setValue:[NSNumber numberWithFloat:x] forKey:[name stringByAppendingString:@"X"]];
+        [node setValue:[NSNumber numberWithFloat:y] forKey:[name stringByAppendingString:@"Y"]];
     }
     else if ([type isEqualToString:@"Float"]
              || [type isEqualToString:@"Degrees"])
@@ -303,6 +312,14 @@
 
 + (CCNode*) nodeGraphFromDictionary:(NSDictionary*) dict parentSize:(CGSize)parentSize
 {
+    if (!renamedProperties)
+    {
+        renamedProperties = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"CCBReaderInternalRenamedProps" ofType:@"plist"]];
+        
+        NSAssert(renamedProperties, @"Failed to load renamed properties dict");
+        [renamedProperties retain];
+    }
+    
     NSArray* props = [dict objectForKey:@"properties"];
     NSString* baseClass = [dict objectForKey:@"baseClass"];
     NSArray* children = [dict objectForKey:@"children"];
@@ -321,6 +338,12 @@
     NSMutableDictionary* extraProps = nodeInfo.extraProps;
     PlugInNode* plugIn = nodeInfo.plugIn;
     
+    // Flash skew compatibility
+    if ([[dict objectForKey:@"usesFlashSkew"] boolValue])
+    {
+        [node setUsesFlashSkew:YES];
+    }
+    
     // Set properties for the node
     int numProps = [props count];
     for (int i = 0; i < numProps; i++)
@@ -329,6 +352,13 @@
         NSString* type = [propInfo objectForKey:@"type"];
         NSString* name = [propInfo objectForKey:@"name"];
         id serializedValue = [propInfo objectForKey:@"value"];
+        
+        // Check for renamings
+        NSDictionary* renameRule = [renamedProperties objectForKey:name];
+        if (renameRule)
+        {
+            name = [renameRule objectForKey:@"newName"];
+        }
         
         if ([plugIn dontSetInEditorProperty:name])
         {
