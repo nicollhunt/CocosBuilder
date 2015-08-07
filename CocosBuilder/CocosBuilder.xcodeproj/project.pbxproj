@@ -103,6 +103,7 @@
 		80A61FA81B24BD590079A790 /* SimpleAudioEngine.m in Sources */ = {isa = PBXBuildFile; fileRef = 80A61FA41B24BD590079A790 /* SimpleAudioEngine.m */; };
 		80A61FAD1B24BD7F0079A790 /* CDXMacOSXSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 80A61FAA1B24BD7F0079A790 /* CDXMacOSXSupport.m */; };
 		80A61FAE1B24BD7F0079A790 /* CDXPropertyModifierAction.m in Sources */ = {isa = PBXBuildFile; fileRef = 80A61FAC1B24BD7F0079A790 /* CDXPropertyModifierAction.m */; };
+		80F663641B73768500827162 /* SequencerDurationWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 80F663601B73746F00827162 /* SequencerDurationWindow.xib */; };
 		835DB052171561B8003A2F7B /* LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 835DAFA7171561B7003A2F7B /* LICENSE.txt */; };
 		835DB053171561B8003A2F7B /* README.markdown in Resources */ = {isa = PBXBuildFile; fileRef = 835DAFA8171561B7003A2F7B /* README.markdown */; };
 		835DB083171561B8003A2F7B /* About.txt in Resources */ = {isa = PBXBuildFile; fileRef = 835DB030171561B7003A2F7B /* About.txt */; };
@@ -993,6 +994,7 @@
 		80A61FAA1B24BD7F0079A790 /* CDXMacOSXSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDXMacOSXSupport.m; path = CocosDenshionExtras/CDXMacOSXSupport.m; sourceTree = "<group>"; };
 		80A61FAB1B24BD7F0079A790 /* CDXPropertyModifierAction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDXPropertyModifierAction.h; path = CocosDenshionExtras/CDXPropertyModifierAction.h; sourceTree = "<group>"; };
 		80A61FAC1B24BD7F0079A790 /* CDXPropertyModifierAction.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDXPropertyModifierAction.m; path = CocosDenshionExtras/CDXPropertyModifierAction.m; sourceTree = "<group>"; };
+		80F663601B73746F00827162 /* SequencerDurationWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SequencerDurationWindow.xib; sourceTree = "<group>"; };
 		835DAF3F17156161003A2F7B /* CCBHTTPServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCBHTTPServer.h; sourceTree = "<group>"; };
 		835DAF4017156161003A2F7B /* CCBHTTPServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CCBHTTPServer.m; sourceTree = "<group>"; };
 		835DAF81171561B7003A2F7B /* DDData.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDData.h; sourceTree = "<group>"; };
@@ -2936,6 +2938,7 @@
 				E3A0ED59159119E7000BDF4B /* SequencerSettingsWindow.m */,
 				E3FD4DDD15A455B90032C2DD /* SequencerSequenceArrayController.h */,
 				E3FD4DDE15A455B90032C2DD /* SequencerSequenceArrayController.m */,
+				80F663601B73746F00827162 /* SequencerDurationWindow.xib */,
 				E3F73DB41593908A00D74084 /* SequencerDurationWindow.h */,
 				E3F73DB51593908A00D74084 /* SequencerDurationWindow.m */,
 				E3926186159C69D20034FF1D /* SequencerKeyframeEasing.h */,
@@ -4504,6 +4507,7 @@
 				E3FEA8A714E45EEF00119FBE /* InspectorSize.xib in Resources */,
 				E3FEA8AC14E47C5700119FBE /* InspectorPoint.xib in Resources */,
 				E3FEA8B114E4872D00119FBE /* InspectorPointLock.xib in Resources */,
+				80F663641B73768500827162 /* SequencerDurationWindow.xib in Resources */,
 				E3FEA8B614E4929300119FBE /* InspectorScaleLock.xib in Resources */,
 				E3FEA8BB14E4989A00119FBE /* InspectorDegrees.xib in Resources */,
 				E3FEA8C014E49D8300119FBE /* InspectorInteger.xib in Resources */,

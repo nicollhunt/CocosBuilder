@@ -273,6 +273,7 @@
     int typeId = [self propTypeIdForName:type];
     NSAssert(typeId >= 0, @"ccbi export: Trying to write unkown property type %@",type);
     
+    NSLog(@"Exporting %@ type=%d\n", name, typeId);
     // Property type
     [self writeInt:typeId withSign:NO];
     
