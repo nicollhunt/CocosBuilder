@@ -63,7 +63,6 @@
 		7789ABEC133AB12000CEFCC7 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7789ABEB133AB12000CEFCC7 /* OpenGL.framework */; };
 		7789ABEE133AB12F00CEFCC7 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7789ABED133AB12F00CEFCC7 /* libz.dylib */; };
 		7789ACEA133AB47A00CEFCC7 /* CocosScene.m in Sources */ = {isa = PBXBuildFile; fileRef = 7789ACE9133AB47A00CEFCC7 /* CocosScene.m */; };
-		7789ACEF133AB6A700CEFCC7 /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7789ACED133AB6A700CEFCC7 /* icon.icns */; };
 		7789ACF1133BD5E800CEFCC7 /* header-bg.png in Resources */ = {isa = PBXBuildFile; fileRef = 7789ACF0133BD5E800CEFCC7 /* header-bg.png */; };
 		77AC50231360A05400B04360 /* CocosBuilderIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 77AC50221360A05300B04360 /* CocosBuilderIcon.png */; };
 		77AC50251360A0FB00B04360 /* Icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 77AC50241360A0FB00B04360 /* Icon.icns */; };
@@ -4458,7 +4457,6 @@
 				7789ABCD133AA82000CEFCC7 /* InfoPlist.strings in Resources */,
 				7789ABD3133AA82000CEFCC7 /* Credits.rtf in Resources */,
 				7789ABD9133AA82000CEFCC7 /* MainMenu.xib in Resources */,
-				7789ACEF133AB6A700CEFCC7 /* icon.icns in Resources */,
 				7789ACF1133BD5E800CEFCC7 /* header-bg.png in Resources */,
 				772BE567133E40D60009B5B9 /* missing-texture.png in Resources */,
 				772BE57C134398EE0009B5B9 /* NewDocWindow.xib in Resources */,
