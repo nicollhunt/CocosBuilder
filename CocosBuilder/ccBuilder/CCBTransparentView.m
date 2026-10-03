@@ -31,4 +31,16 @@
     NSRectFill(rect);
 }
 
+// This view hosts the transparent overlay window above the GL view. The overlay
+// window only exists to host interactive subviews (the sticky note editor).
+// Any event that was not directed at one of those subviews must fall through
+// to the GL view underneath, which CCBTransparentWindow handles in sendEvent:.
+- (NSView *)hitTest:(NSPoint)point
+{
+    NSView *hit = [super hitTest:point];
+    // Returning nil for the overlay itself lets the window detect that the
+    // event should be forwarded to the GL view below.
+    return (hit == self) ? nil : hit;
+}
+
 @end

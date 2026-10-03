@@ -23,6 +23,7 @@
  */
 
 #import "CCBTransparentWindow.h"
+#import "CocosBuilderAppDelegate.h"
 
 @implementation CCBTransparentWindow
 
@@ -41,6 +42,11 @@
         [self setAlphaValue:1.0];
         // Turn off opacity so that the parts of the window that are not drawn into are transparent.
         [self setOpaque:NO];
+        // Modern macOS composites the window background color where the content
+        // view does not paint opaque pixels (dark mode default is near-black),
+        // so it must be cleared for the overlay to be truly transparent.
+        [self setBackgroundColor:[NSColor clearColor]];
+        [self setHasShadow:NO];
     }
     return self;
 }
@@ -53,7 +59,5 @@
 - (BOOL)canBecomeKeyWindow {
     return YES;
 }
-
-
 
 @end

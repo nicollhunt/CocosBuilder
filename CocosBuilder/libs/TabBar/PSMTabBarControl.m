@@ -639,11 +639,11 @@
 	[[NSNotificationCenter defaultCenter] removeObserver:cell];
 
 	if([cell closeButtonTrackingTag] != 0) {
-		[self removeTrackingRect:[cell closeButtonTrackingTag]];
+		[self _safeRemoveTrackingRect:[cell closeButtonTrackingTag]];
 		[cell setCloseButtonTrackingTag:0];
 	}
 	if([cell cellTrackingTag] != 0) {
-		[self removeTrackingRect:[cell cellTrackingTag]];
+		[self _safeRemoveTrackingRect:[cell cellTrackingTag]];
 		[cell setCellTrackingTag:0];
 	}
 
@@ -1089,6 +1089,20 @@
 	[self setNeedsDisplay:YES];
 }
 
+// Modern AppKit raises NSInternalInconsistencyException when asked to remove a
+// tracking rect with a zero or stale tag (legacy AppKit silently ignored it).
+// Cells start with tag 0, and rects are invalidated whenever the view changes
+// windows, so treat removal as best-effort.
+- (void)_safeRemoveTrackingRect:(NSTrackingRectTag)tag {
+	if(tag == 0) return;
+	@try {
+		[self removeTrackingRect:tag];
+	}
+	@catch (NSException * __unused exception) {
+		// Tracking rect already gone; nothing to do.
+	}
+}
+
 - (void)_setupTrackingRectsForCell:(PSMTabBarCell *)cell {
 	NSInteger tag, index = [_cells indexOfObject:cell];
 	NSRect cellTrackingRect = [_controller cellTrackingRectAtIndex:index];
@@ -1096,7 +1110,7 @@
 	BOOL mouseInCell = NSMouseInRect(mousePoint, cellTrackingRect, [self isFlipped]);
 
 	//set the cell tracking rect
-	[self removeTrackingRect:[cell cellTrackingTag]];
+	[self _safeRemoveTrackingRect:[cell cellTrackingTag]];
 	tag = [self addTrackingRect:cellTrackingRect owner:cell userData:nil assumeInside:mouseInCell];
 	[cell setCellTrackingTag:tag];
 	[cell setHighlighted:mouseInCell];
@@ -1106,7 +1120,7 @@
 		BOOL mouseInCloseRect = NSMouseInRect(mousePoint, closeRect, [self isFlipped]);
 
 		//set the close button tracking rect
-		[self removeTrackingRect:[cell closeButtonTrackingTag]];
+		[self _safeRemoveTrackingRect:[cell closeButtonTrackingTag]];
 		tag = [self addTrackingRect:closeRect owner:cell userData:nil assumeInside:mouseInCloseRect];
 		[cell setCloseButtonTrackingTag:tag];
 

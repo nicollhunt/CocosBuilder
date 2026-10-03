@@ -33,6 +33,7 @@
 	NSInteger								_count;
 	NSColor								*_countColor;
 	BOOL									_isEdited;
+	id										_controlView;
 }
 
 // creation/destruction

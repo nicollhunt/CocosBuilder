@@ -85,14 +85,15 @@
 
 - (BOOL)splitView:(NSSplitView *)splitView shouldHideDividerAtIndex:(NSInteger)dividerIndex
 {
-    return YES;
+    // Hidden dividers are not draggable on modern AppKit; the thin 1pt divider
+    // is nearly invisible anyway.
+    return NO;
 }
 
 
 
 - (CGFloat) splitView:(NSSplitView *)sv constrainMaxCoordinate:(CGFloat)proposedMaximumPosition ofSubviewAt:(NSInteger)dividerIndex
 {
-    
     if (bottomView.isHidden) {
         return proposedMaximumPosition;
     }

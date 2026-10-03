@@ -153,8 +153,9 @@ static CocosBuilderAppDelegate* sharedAppDelegate;
 	
 	[director setDisplayStats:NO];
 	[director setProjection:kCCDirectorProjection2D];
-    //[cocosView openGLContext];
-    
+    // Modern AppKit no longer makes the NSOpenGLView context implicitly current
+    [[cocosView openGLContext] makeCurrentContext];
+
 	[director setView:cocosView];
     
 	// EXPERIMENTAL stuff.
@@ -237,11 +238,17 @@ static CocosBuilderAppDelegate* sharedAppDelegate;
     frame.origin.y += self.window.frame.origin.y;
     
     guiWindow = [[CCBTransparentWindow alloc] initWithContentRect:frame];
-    
+
     guiView = [[[CCBTransparentView alloc] initWithFrame:cocosView.frame] autorelease];
     [guiWindow setContentView:guiView];
     guiWindow.delegate = self;
-    
+
+    // The overlay only exists to host the sticky note editor while it is
+    // open. Ignoring mouse events makes the window server route all events
+    // (clicks, scroll deltas, coordinates intact) natively to the GL view
+    // underneath; NotesLayer toggles this while editing a note.
+    guiWindow.ignoresMouseEvents = YES;
+
     [window addChildWindow:guiWindow ordered:NSWindowAbove];
 }
 
@@ -534,6 +541,9 @@ static CocosBuilderAppDelegate* sharedAppDelegate;
     {
         [guiView setSubviews:[NSArray array]];
         [[CocosScene cocosScene].notesLayer showAllNotesLabels];
+
+        // Note editing session ended: hand all events back to the main window
+        guiWindow.ignoresMouseEvents = YES;
     }
 }
 

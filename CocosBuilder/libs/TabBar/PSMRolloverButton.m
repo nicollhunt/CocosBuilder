@@ -10,6 +10,17 @@
 
 @implementation PSMRolloverButton
 
+- (id)initWithFrame:(NSRect)frame {
+	self = [super initWithFrame:frame];
+	if(self) {
+		// Programmatic instances never get -awakeFromNib, which is where the
+		// sentinel used to be set. Without it the tag stays 0 and the first
+		// -removeTrackingRect raises on modern AppKit.
+		_myTrackingRectTag = -1;
+	}
+	return self;
+}
+
 - (void)awakeFromNib {
 	if([[self superclass] instancesRespondToSelector:@selector(awakeFromNib)]) {
 		[super awakeFromNib];
@@ -101,8 +112,13 @@
 }
 
 - (void)removeTrackingRect {
-	if(_myTrackingRectTag != -1) {
-		[self removeTrackingRect:_myTrackingRectTag];
+	if(_myTrackingRectTag > 0) {
+		@try {
+			[self removeTrackingRect:_myTrackingRectTag];
+		}
+		@catch (NSException * __unused exception) {
+			// Rect already invalidated (e.g. window change); nothing to do.
+		}
 	}
 	_myTrackingRectTag = -1;
 }

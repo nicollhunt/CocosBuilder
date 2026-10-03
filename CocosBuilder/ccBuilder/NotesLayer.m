@@ -72,10 +72,11 @@
     [[closeButton cell] setHighlightsBy:NSContentsCellMask];
     
     // Show the gui window and make it key
+    [ad.guiWindow setIgnoresMouseEvents:NO];
     [ad.guiWindow setIsVisible:YES];
     [ad.guiWindow makeKeyWindow];
     [ad.guiWindow makeFirstResponder:textView];
-    
+
     note.labelVisible = NO;
 }
 
@@ -83,11 +84,12 @@
 {
     // Remove the sticky note
     [self removeChild:modifiedNote cleanup:YES];
-    
+
     // End the editing session
     CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
+    [ad.guiWindow setIgnoresMouseEvents:YES];
     [ad.window makeKeyWindow];
-    
+
     modifiedNote = NULL;
 }
 

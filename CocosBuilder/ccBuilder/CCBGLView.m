@@ -32,7 +32,9 @@
 
 - (void) reshape
 {
-    [self removeTrackingRect:trackingTag];
+    // Modern AppKit raises when removing an invalid tracking rect; the tag is
+    // 0 until the first tracking rect is added.
+    if (trackingTag != 0) [self removeTrackingRect:trackingTag];
     trackingTag = [self addTrackingRect:[self bounds] owner:self userData:NULL assumeInside:NO];
     [[CocosBuilderAppDelegate appDelegate] resizeGUIWindow:[self bounds].size];
     
@@ -97,6 +99,11 @@
 - (void) scrollWheel:(NSEvent *)theEvent
 {
     [[CocosScene cocosScene] scrollWheel:theEvent];
+}
+
+- (void) magnifyWithEvent:(NSEvent *)event
+{
+    [[CocosScene cocosScene] magnifyWithEvent:event];
 }
 
 - (void)mouseMoved:(NSEvent *)event

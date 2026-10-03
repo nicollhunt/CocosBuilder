@@ -1133,12 +1133,35 @@ static CocosScene* sharedCocosScene;
     if (!appDelegate.window.isKeyWindow) return;
     if (isMouseTransforming || isPanning || currentMouseTransform != kCCBTransformHandleNone) return;
     if (!appDelegate.hasOpenedDocument) return;
+
+    if ([theEvent hasPreciseScrollingDeltas])
+    {
+        // Trackpad / magic mouse: precise deltas are small floats. Accumulate
+        // them directly; truncating to int would round them to zero.
+        scrollOffset.x += [theEvent scrollingDeltaX];
+        scrollOffset.y -= [theEvent scrollingDeltaY];
+    }
+    else
+    {
+        // Classic mouse wheel: line-based deltas, amplify a bit
+        scrollOffset.x += [theEvent deltaX]*4;
+        scrollOffset.y -= [theEvent deltaY]*4;
+    }
+}
+
+// Trackpad pinch to zoom. -magnifyWithEvent: is forwarded from CCBGLView the
+// same way as scrollWheel:; the magnification is an incremental delta per
+// gesture event.
+- (void) magnifyWithEvent:(NSEvent *)event
+{
+    if (!appDelegate.window.isKeyWindow) return;
+    if (isMouseTransforming || isPanning || currentMouseTransform != kCCBTransformHandleNone) return;
+    if (!appDelegate.hasOpenedDocument) return;
     
-    int dx = [theEvent deltaX]*4;
-    int dy = -[theEvent deltaY]*4;
-    
-    scrollOffset.x = scrollOffset.x+dx;
-    scrollOffset.y = scrollOffset.y+dy;
+    float zoom = stageZoom * (1.0f + [event magnification]);
+    if (zoom > 8) zoom = 8;
+    if (zoom < 0.125f) zoom = 0.125f;
+    [self setStageZoom:zoom];
 }
 
 #pragma mark Updates every frame

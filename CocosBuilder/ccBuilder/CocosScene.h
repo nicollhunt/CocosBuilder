@@ -128,6 +128,7 @@ enum {
 -(id) initWithAppDelegate:(CocosBuilderAppDelegate*)app;
 
 - (void) scrollWheel:(NSEvent *)theEvent;
+- (void) magnifyWithEvent:(NSEvent *)event;
 
 - (void) setStageSize: (CGSize) size centeredOrigin:(BOOL)centeredOrigin;
 - (CGSize) stageSize;
