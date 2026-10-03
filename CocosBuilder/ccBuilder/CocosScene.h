@@ -96,6 +96,7 @@ enum {
     // Selection
     NSMutableArray* nodesAtSelectionPt;
     int currentNodeAtSelectionPtIdx;
+    CGPoint lastSelectionClickPt;
     
     CCLayerColor* borderBottom;
     CCLayerColor* borderTop;

@@ -674,9 +674,32 @@ static CocosScene* sharedCocosScene;
     }
     
     // Clicks inside objects
+    BOOL descendStack = !([event modifierFlags] & NSShiftKeyMask)
+                        && ccpDistance(pos, lastSelectionClickPt) < 2.0f;
+    
     [nodesAtSelectionPt removeAllObjects];
     [self nodesUnderPt:pos rootNode:rootNode nodes:nodesAtSelectionPt];
-    currentNodeAtSelectionPtIdx = (int)[nodesAtSelectionPt count] -1;
+    
+    int hitCount = (int)[nodesAtSelectionPt count];
+    if (descendStack
+        && hitCount > 1
+        && currentNodeAtSelectionPtIdx >= 0
+        && currentNodeAtSelectionPtIdx < hitCount
+        && [appDelegate.selectedNodes containsObject:[nodesAtSelectionPt objectAtIndex:currentNodeAtSelectionPtIdx]])
+    {
+        // Repeated click on the same spot: descend to the next object behind
+        currentNodeAtSelectionPtIdx -= 1;
+        if (currentNodeAtSelectionPtIdx < 0)
+        {
+            currentNodeAtSelectionPtIdx = hitCount - 1;
+        }
+    }
+    else
+    {
+        currentNodeAtSelectionPtIdx = hitCount - 1;
+    }
+    
+    lastSelectionClickPt = pos;
     
     currentMouseTransform = kCCBTransformHandleNone;
     
@@ -1254,6 +1277,7 @@ static CocosScene* sharedCocosScene;
     appDelegate = app;
     
     nodesAtSelectionPt = [[NSMutableArray array] retain];
+    lastSelectionClickPt = CGPointMake(FLT_MAX, FLT_MAX);
     
 	if( (self=[super init] ))
     {
