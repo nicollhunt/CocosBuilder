@@ -268,6 +268,24 @@
     return NO;
 }
 
+#if kCCBXVersion < 5
+// Older CCBReaders (cocos2d-iphone 2.0 / cocos2d-x 2.0, ccbi version 4) expect the
+// "is"-prefixed property names used before cocos2d 2.1 renamed them
+- (NSString*) v4PropertyName:(NSString*)name
+{
+    if ([name isEqualToString:@"touchEnabled"]) return @"isTouchEnabled";
+    if ([name isEqualToString:@"accelerometerEnabled"]) return @"isAccelerometerEnabled";
+    if ([name isEqualToString:@"mouseEnabled"]) return @"isMouseEnabled";
+    if ([name isEqualToString:@"keyboardEnabled"]) return @"isKeyboardEnabled";
+    return name;
+}
+#else
+- (NSString*) v4PropertyName:(NSString*)name
+{
+    return name;
+}
+#endif // kCCBXVersion < 5
+
 - (void) writeProperty:(id) prop type:(NSString*)type name:(NSString*)name platform:(NSString*)platform
 {
     int typeId = [self propTypeIdForName:type];
@@ -473,6 +491,9 @@
         for (NSString* propName in props)
         {
             NSMutableDictionary* prop = [props objectForKey:propName];
+            
+            [self addToStringCache:[self v4PropertyName:propName] isPath:NO];
+            
             int kfType = [[prop objectForKey:@"type"] intValue];
             if (kfType == kCCBKeyframeTypeSpriteFrame)
             {
@@ -504,7 +525,7 @@
     for (int i = 0; i < [props count]; i++)
     {
         NSDictionary* prop = [props objectAtIndex:i];
-        [self addToStringCache:[prop objectForKey:@"name"] isPath:NO];
+        [self addToStringCache:[self v4PropertyName:[prop objectForKey:@"name"]] isPath:NO];
         id value = [prop objectForKey:@"value"];
         
         NSString* type = [prop objectForKey:@"type"];
@@ -619,6 +640,7 @@
     {
         [self addToStringCache:[seq objectForKey:@"name"] isPath:NO];
         
+#if kCCBXVersion >= 5
         // Write callback channel
         NSArray* callbackKeyframes = [[seq objectForKey:@"callbackChannel"] objectForKey:@"keyframes"];
         for (NSDictionary* kf in callbackKeyframes)
@@ -635,6 +657,7 @@
             NSString* soundName = [value objectAtIndex:0];
             [self addToStringCache:soundName isPath:YES];
         }
+#endif // kCCBXVersion >= 5
     }
 }
 
@@ -691,6 +714,7 @@
             autoPlaySeqId = [[seq objectForKey:@"sequenceId"] intValue];
         }
         
+#if kCCBXVersion >= 5
         // Write callback channel
         NSArray* callbackKeyframes = [[seq objectForKey:@"callbackChannel"] objectForKey:@"keyframes"];
         
@@ -708,6 +732,7 @@
         {
             [self writeChannelKeyframe:keyframe];
         }
+#endif // kCCBXVersion >= 5
     }
     
     // Write autoPlay sequence (-1 for no autoplay)
@@ -881,7 +906,7 @@
             NSMutableDictionary* prop = [props objectForKey:propName];
             
             // Write a sequence node property
-            [self writeCachedString:propName isPath:NO];
+            [self writeCachedString:[self v4PropertyName:propName] isPath:NO];
             
             // Write property type
             int kfType = [[prop objectForKey:@"type"] intValue];
@@ -1003,7 +1028,7 @@
             }
         }
         
-        [self writeProperty:value type:type name:name platform:[prop objectForKey:@"platform"]];
+        [self writeProperty:value type:type name:[self v4PropertyName:name] platform:[prop objectForKey:@"platform"]];
     }
     
     // Write custom properties
