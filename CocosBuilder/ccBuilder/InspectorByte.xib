@@ -45,7 +45,7 @@
 					<bool key="EncodedWithXMLCoder">YES</bool>
 					<object class="NSTextField" id="26311432">
 						<reference key="NSNextResponder" ref="1005"/>
-						<int key="NSvFlags">265</int>
+						<int key="NSvFlags">266</int>
 						<string key="NSFrame">{{84, 12}, {68, 19}}</string>
 						<reference key="NSSuperview" ref="1005"/>
 						<reference key="NSWindow"/>
@@ -150,7 +150,7 @@
 					</object>
 					<object class="NSTextField" id="647233470">
 						<reference key="NSNextResponder" ref="1005"/>
-						<int key="NSvFlags">266</int>
+						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{-3, 14}, {82, 14}}</string>
 						<reference key="NSSuperview" ref="1005"/>
 						<reference key="NSWindow"/>
@@ -179,7 +179,7 @@
 					</object>
 					<object class="NSTextField" id="304649497">
 						<reference key="NSNextResponder" ref="1005"/>
-						<int key="NSvFlags">265</int>
+						<int key="NSvFlags">268</int>
 						<string key="NSFrame">{{81, 0}, {74, 11}}</string>
 						<reference key="NSSuperview" ref="1005"/>
 						<reference key="NSWindow"/>
