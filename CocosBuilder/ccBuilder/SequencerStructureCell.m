@@ -28,6 +28,7 @@
 #import "PlugInNode.h"
 #import "SequencerHandler.h"
 #import "SequencerSequence.h"
+#import "CocosScene.h"
 
 @implementation SequencerStructureCell
 
@@ -47,6 +48,24 @@
         [imgRowBgChannel drawInRect:rowRect fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
         [super drawWithFrame:cellFrame inView:controlView];
         return;
+    }
+    
+    // Draw an expand chevron at the right edge of collapsed rows, so it is
+    // easy to find how to reveal the animatable properties
+    if (!node.seqExpanded && node != [CocosScene cocosScene].rootNode)
+    {
+        if (!chevronImagesLoaded)
+        {
+            imgSeqExpandChevron = [[NSImage imageNamed:@"seq-btn-expand.png"] retain];
+            [imgSeqExpandChevron setFlipped:YES];
+            imgSeqCollapseChevron = [[NSImage imageNamed:@"seq-btn-collapse.png"] retain];
+            [imgSeqCollapseChevron setFlipped:YES];
+            chevronImagesLoaded = YES;
+        }
+        
+        NSRect chevronRect = NSMakeRect(cellFrame.origin.x + cellFrame.size.width - 16,
+                                        cellFrame.origin.y, 16, 16);
+        [imgSeqExpandChevron drawInRect:chevronRect fromRect:NSMakeRect(0, 0, 16, 16) operation:NSCompositeSourceOver fraction:1];
     }
     
     // Only draw property names if cell is expanded
@@ -146,6 +165,8 @@
 {
     //self.node = NULL;
     [imgRowBgChannel release];
+    [imgSeqExpandChevron release];
+    [imgSeqCollapseChevron release];
     [super dealloc];
 }
 

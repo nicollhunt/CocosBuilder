@@ -31,6 +31,9 @@
     
     BOOL imagesLoaded;
     NSImage* imgRowBgChannel;
+    NSImage* imgSeqExpandChevron;
+    NSImage* imgSeqCollapseChevron;
+    BOOL chevronImagesLoaded;
 }
 
 @property (nonatomic,assign) CCNode* node;

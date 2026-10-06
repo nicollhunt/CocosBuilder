@@ -35,6 +35,7 @@
 #import "SequencerCallbackChannel.h"
 #import "SequencerSoundChannel.h"
 #import "SequencerPopoverHandler.h"
+#import "CocosScene.h"
 
 @implementation SequencerScrubberSelectionView
 
@@ -352,6 +353,17 @@
     }
     
     CCNode* node = item;
+    
+    if (!node.seqExpanded && node != [CocosScene cocosScene].rootNode)
+    {
+        // Collapsed row: reveal the animatable properties instead of
+        // silently keyframing the first property ("visible")
+        node.seqExpanded = YES;
+        [outlineView reloadData];
+        
+        return;
+    }
+    
     NSString* prop = [self propNameForNode:node subRow:sub];
     
     [node addDefaultKeyframeForProperty:prop atTime:time sequenceId:[SequencerHandler sharedHandler].currentSequence.sequenceId];
@@ -871,6 +883,9 @@
     
     SequencerSequence* seq = [SequencerHandler sharedHandler].currentSequence;
     int subRow = [self yMousePosToSubRow:mouseLocation.y];
+    float time = [seq positionToTime:mouseLocation.x];
+    if (time < 0) time = 0;
+    if (time > seq.timelineLength) time = seq.timelineLength;
     float timeMin = [seq positionToTime:mouseLocation.x - 3];
     float timeMax = [seq positionToTime:mouseLocation.x + 3];
     
@@ -914,7 +929,81 @@
         return menu;
     }
     
+    // Empty row on a node: offer to insert a keyframe here
+    if ([item isKindOfClass:[CCNode class]])
+    {
+        CCNode* node = item;
+        NSMenu* menu = [[[NSMenu alloc] initWithTitle:@"Insert Keyframe"] autorelease];
+        [menu setAutoenablesItems:NO];
+        
+        // Toggle for the animatable properties rows
+        if (node != [CocosScene cocosScene].rootNode)
+        {
+            NSMenuItem* toggleItem = [[NSMenuItem alloc] initWithTitle:(node.seqExpanded ? @"Hide Animatable Properties" : @"Show Animatable Properties")
+                                                               action:@selector(contextMenuToggleExpand:)
+                                                         keyEquivalent:@""];
+            [toggleItem setTarget:self];
+            [toggleItem setRepresentedObject:[NSDictionary dictionaryWithObjectsAndKeys:node, @"node", NULL]];
+            [menu addItem:toggleItem];
+            [toggleItem release];
+            
+            [menu addItem:[NSMenuItem separatorItem]];
+        }
+        
+        NSArray* props = [node.plugIn animatablePropertiesForNode:node];
+        for (NSString* prop in props)
+        {
+            if ([node shouldDisableProperty:prop]) continue;
+            
+            NSString* title = [[node.plugIn.nodePropertiesDict objectForKey:prop] objectForKey:@"displayName"];
+            if (!title || [title length] == 0) title = prop;
+            
+            NSMenuItem* menuItem = [[NSMenuItem alloc] initWithTitle:title action:@selector(contextMenuAddKeyframe:) keyEquivalent:@""];
+            [menuItem setTarget:self];
+            [menuItem setRepresentedObject:[NSDictionary dictionaryWithObjectsAndKeys:
+                                            prop, @"prop",
+                                            [NSNumber numberWithFloat:time], @"time",
+                                            node, @"node",
+                                            NULL]];
+            [menu addItem:menuItem];
+            [menuItem release];
+        }
+        
+        if ([menu numberOfItems] > 0) return menu;
+    }
+    
     return NULL;
+}
+
+- (void) contextMenuAddKeyframe:(NSMenuItem*)sender
+{
+    NSDictionary* info = [sender representedObject];
+    CCNode* node = [info objectForKey:@"node"];
+    NSString* prop = [info objectForKey:@"prop"];
+    if (!node || !prop) return;
+    
+    // Move the time marker to where the user right clicked
+    SequencerSequence* seq = [SequencerHandler sharedHandler].currentSequence;
+    seq.timelinePosition = [[info objectForKey:@"time"] floatValue];
+    
+    // Select the clicked node so the inspector follows suit
+    CocosBuilderAppDelegate* ad = [CocosBuilderAppDelegate appDelegate];
+    if (ad.selectedNodes.count != 1 || ![ad.selectedNodes containsObject:node])
+    {
+        ad.selectedNodes = [NSArray arrayWithObject:node];
+    }
+    
+    // Insert the keyframe at marker position (reuses the Animation menu code path)
+    [[SequencerHandler sharedHandler] menuAddKeyframeNamed:prop];
+}
+
+- (void) contextMenuToggleExpand:(NSMenuItem*)sender
+{
+    CCNode* node = [[sender representedObject] objectForKey:@"node"];
+    if (!node) return;
+    
+    node.seqExpanded = !node.seqExpanded;
+    [[SequencerHandler sharedHandler].outlineHierarchy reloadData];
 }
 
 - (void) dealloc

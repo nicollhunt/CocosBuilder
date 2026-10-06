@@ -61,6 +61,24 @@
         [sh toggleSeqExpanderForRow:(int)[self rowAtPoint:mouseLocationInTable]];
         return;
     }
+    else if (column == [self columnWithIdentifier:@"structure"])
+    {
+        // The rightmost few pixels of the structure cell show a chevron for
+        // expanding the node's animatable properties
+        int row = (int)[self rowAtPoint:mouseLocationInTable];
+        if (row >= 0)
+        {
+            NSRect cellRect = [self frameOfCellAtColumn:column row:row];
+            if (mouseLocationInTable.x > NSMaxX(cellRect) - 18)
+            {
+                sh.dragAndDropEnabled = NO;
+                [sh toggleSeqExpanderForRow:row];
+                return;
+            }
+        }
+        
+        sh.dragAndDropEnabled = YES;
+    }
     else
     {
         sh.dragAndDropEnabled = YES;

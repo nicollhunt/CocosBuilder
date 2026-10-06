@@ -180,6 +180,9 @@ static CocosBuilderAppDelegate* sharedAppDelegate;
     sequenceHandler.scroller = timelineScroller;
     sequenceHandler.scrollView = sequenceScrollView;
     
+    // Help users discover how to place keyframes
+    [scrubberSelectionView setToolTip:@"Click the arrow at the right edge of a node’s row (or its tiny separator button) to show its animatable properties.\nOption-click a property row to insert a keyframe there.\nRight-click a property row to insert a keyframe or show/hide properties.\nDouble-click a keyframe to edit it, drag to move it.\nClick or drag in the ruler above the rows to scrub time."];
+    
     [self updateTimelineMenu];
     [sequenceHandler updateScaleSlider];
 }
